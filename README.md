@@ -12,7 +12,7 @@ For information on requirements and installation of Detectron view the INSTALL.m
 ## Related Repositories
 
 This section contains links to some of the other repositories that may be useful in implementing Mask RCNN for use with KITTI and V-KITTI datasets.
-1. [detectronHelperScripts](https://github.com/sidpethe/detectronHelperScripts.git) : Scripts for running Mask RCNN with detectron. 
+1. [detectronRoot](https://github.com/sidpethe/detectronRoot.git) : Scripts for running Mask RCNN with detectron. 
 2. [vkittiToKitti](https://github.com/sidpethe/vkittiToKitti.git): Converting the vkitti ground truth to kitti compatible ground truth. 
 
 ## Acknowledgements
