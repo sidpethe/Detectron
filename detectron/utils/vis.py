@@ -36,6 +36,9 @@ envu.set_up_matplotlib()
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
 
+# Helper for label ID
+import labels
+
 plt.rcParams['pdf.fonttype'] = 42  # For editing in Adobe Illustrator
 
 
@@ -92,6 +95,11 @@ def get_class_string(class_index, score, dataset):
     class_text = dataset.classes[class_index] if dataset is not None else \
         'id{:d}'.format(class_index)
     return class_text + ' {:0.2f}'.format(score).lstrip('0')
+    
+def get_class_name(class_index, dataset):
+    class_text = dataset.classes[class_index] if dataset is not None else \
+        'id{:d}'.format(class_index)
+    return class_text
 
 
 def vis_mask(img, mask, col, alpha=0.4, show_border=True, border_thick=1):
@@ -226,7 +234,7 @@ def vis_one_image_opencv(
         score = boxes[i, -1]
         if score < thresh:
             continue
-
+		
         # show box (off by default)
         if show_box:
             im = vis_bbox(
@@ -257,7 +265,13 @@ def vis_one_image(
     """Visual debugging of detections."""
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
+    
+    if not os.path.exists(os.path.join(output_dir, 'pred_list')):
+        os.makedirs(os.path.join(output_dir, 'pred_list'))
 
+    if not os.path.exists(os.path.join(output_dir, 'pred_img')):
+        os.makedirs(os.path.join(output_dir, 'pred_img'))
+    
     if isinstance(boxes, list):
         boxes, segms, keypoints, classes = convert_from_cls_format(
             boxes, segms, keypoints)
@@ -291,12 +305,22 @@ def vis_one_image(
         sorted_inds = np.argsort(-areas)
 
     mask_color_id = 0
+    dataset_name='Kitti2015_'
+    pred_list=os.path.basename(im_name)[:-4]+ '.txt'
+    pred_list=os.path.join(output_dir, 'pred_list','{}'.format(pred_list))
+    predListFile=open(('{}'.format(pred_list)),'a')
     for i in sorted_inds:
         bbox = boxes[i, :4]
         score = boxes[i, -1]
         if score < thresh:
             continue
 
+        centroidFile=open(os.path.join(output_dir,'..','centroids.txt'),"a")
+        classid=classes[i]
+        class_text = dataset.classes[classid] if dataset is not None else \
+        'id{:d}'.format(class_index)
+        centroidFile.write("%s %s %i %i\n"%((im_name[-9:]),(class_text.replace(' ','_')),(bbox[0]+bbox[2])/2,(bbox[1]+bbox[3])/2))
+        centroidFile.close()
         # show box (off by default)
         ax.add_patch(
             plt.Rectangle((bbox[0], bbox[1]),
@@ -319,7 +343,16 @@ def vis_one_image(
         if segms is not None and len(segms) > i:
             img = np.ones(im.shape)
             color_mask = color_list[mask_color_id % len(color_list), 0:3]
-            mask_color_id += 1
+            
+            
+            mask_name=os.path.basename(im_name)[:-4]+('_%03d'%mask_color_id)+ '.' + ext
+            relPath=os.path.join('..','pred_img',mask_name)
+            mask_name=os.path.join(output_dir, 'pred_img','{}'.format(mask_name))
+    	    cv2.imwrite(mask_name,(masks[:,:,i]*255))
+    	    labelidfromlabels=labels.name2label[get_class_name(classes[i], dataset)].id if get_class_name(classes[i], dataset) in labels.name2label else labels.name2label['unlabeled'].id
+    	    predListFile.write('{}'.format(relPath)+' '+'{:03d}'.format(labelidfromlabels)+' '+'{:.6f}'.format(score)+'\n')
+    	    
+    	    mask_color_id += 1
 
             w_ratio = .4
             for c in range(3):
@@ -338,7 +371,6 @@ def vis_one_image(
                     edgecolor='w', linewidth=1.2,
                     alpha=0.5)
                 ax.add_patch(polygon)
-
         # show keypoints
         if keypoints is not None and len(keypoints) > i:
             kps = keypoints[i]
@@ -389,6 +421,7 @@ def vis_one_image(
                     line, color=colors[len(kp_lines) + 1], linewidth=1.0,
                     alpha=0.7)
 
-    output_name = os.path.basename(im_name) + '.' + ext
+    output_name = os.path.basename(im_name[:-4]) + '.' + ext
     fig.savefig(os.path.join(output_dir, '{}'.format(output_name)), dpi=dpi)
     plt.close('all')
+    predListFile.close()

@@ -32,6 +32,8 @@ import logging
 import os
 import sys
 import time
+import numpy as np
+
 
 from caffe2.python import workspace
 
@@ -82,6 +84,12 @@ def parse_args():
         help='image file name extension (default: jpg)',
         default='jpg',
         type=str
+    )
+    parser.add_argument(
+        '--Jun-vis',
+        dest='JunVis',
+        help='Jun visualisation (just coloured masks) (default: False)',
+        action='store_true'
     )
     parser.add_argument(
         '--always-out',
@@ -161,21 +169,38 @@ def main(args):
                 'rest (caches and auto-tuning need to warm up)'
             )
 
-        vis_utils.vis_one_image(
-            im[:, :, ::-1],  # BGR -> RGB for visualization
-            im_name,
-            args.output_dir,
-            cls_boxes,
-            cls_segms,
-            cls_keyps,
-            dataset=dummy_coco_dataset,
-            box_alpha=0.3,
-            show_class=True,
-            thresh=args.thresh,
-            kp_thresh=args.kp_thresh,
-            ext=args.output_ext,
-            out_when_no_box=args.out_when_no_box
-        )
+        if args.JunVis:
+            vis_utils.vis_one_image(
+                np.zeros(im.shape),
+                im_name,
+                args.output_dir,
+                cls_boxes,
+                cls_segms,
+                cls_keyps,
+                dataset=dummy_coco_dataset,
+                box_alpha=0,
+                show_class=False,
+                thresh=args.thresh,
+                kp_thresh=args.kp_thresh,
+                ext=args.output_ext,
+                out_when_no_box=args.out_when_no_box
+            )
+        else:
+            vis_utils.vis_one_image(
+                im[:, :, ::-1],  # BGR -> RGB for visualization
+                im_name,
+                args.output_dir,
+                cls_boxes,
+                cls_segms,
+                cls_keyps,
+                dataset=dummy_coco_dataset,
+                box_alpha=0.3,
+                show_class=True,
+                thresh=args.thresh,
+                kp_thresh=args.kp_thresh,
+                ext=args.output_ext,
+                out_when_no_box=args.out_when_no_box
+            )
 
 
 if __name__ == '__main__':
